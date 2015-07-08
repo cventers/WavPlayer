@@ -18,7 +18,7 @@ import flash.media.SoundTransform;
 // Main player class: loads stream, process it by appropriate file decoder,
 // that will initialize correct sound decoder. Decoded audio samples 
 // resample to 44100 and play via AudioSink
-class Player extends flash.events.EventDispatcher {
+class Player extends flash.events.EventDispatcher, implements IPlayer {
     var File : flash.net.URLStream;
     var Sound : fmt.File;
     var Resampler : com.sun.media.sound.SoftAbstractResampler;
@@ -34,9 +34,9 @@ class Player extends flash.events.EventDispatcher {
     var pos : Null<Float>;
 
     var schtr: SoundTransform;
-    public var volume(getVolume, setVolume): Float;
-    public var pan(getPan, setPan): Float;
-    public var soundTransform(getST, setST): SoundTransform;
+    public var volume(get_volume, set_volume): Float;
+    public var pan(get_pan, set_pan): Float;
+    public var soundTransform(get_soundTransform, set_soundTransform): SoundTransform;
 
     public function new(?path : String) {
         super();
@@ -53,6 +53,7 @@ class Player extends flash.events.EventDispatcher {
         // To-do: re-play already loaded stream
         pitch = new Array<Float>();
         trace("Player for "+fname);
+        var slnrx = ~/[.](sln(\d{1,3}))$/i;
         if ((~/[.]au$/i).match(fname)) {
             Sound = new fmt.FileAu();
         } else
@@ -61,6 +62,9 @@ class Player extends flash.events.EventDispatcher {
         } else
         if ((~/[.](sln|raw)$/i).match(fname)) {
             Sound = new fmt.FileSln();
+        } else
+        if (slnrx.match(fname)) {
+            Sound = new fmt.FileSln(Std.parseInt(slnrx.matched(2)) * 1000);
         } else
         if ((~/[.](alaw|al)$/i).match(fname)) {
             Sound = new fmt.FileAlaw();
@@ -108,33 +112,33 @@ class Player extends flash.events.EventDispatcher {
             asink.addEventListener(PlayerEvent.STOPPED, stoppedEvent);
         } catch (error : Dynamic) {
             trace("Unable to load: "+error);
-            trace(haxe.Stack.exceptionStack());
+            //trace(haxe.Stack.exceptionStack());
             throw error;
         }
     }
 
-    public function setVolume(volume: Float): Float {
+    public function set_volume(volume: Float): Float {
         this.schtr.volume=volume;
-        trace("setVolume("+volume+")");
+        trace("set_volume("+volume+")");
         this.soundTransform = this.soundTransform; // Apply changes
         return volume;
     }
 
-    public function getVolume(): Float {
+    public function get_volume(): Float {
         return this.schtr.volume;
     }
 
-    public function setPan(pan: Float): Float {
+    public function set_pan(pan: Float): Float {
         this.schtr.pan=pan;
         this.soundTransform = this.soundTransform; // Apply changes
         return this.schtr.pan;
     }
 
-    public function getPan(): Float {
+    public function get_pan(): Float {
         return this.schtr.pan;
     }
 
-    public function setST(st: SoundTransform): SoundTransform {
+    public function set_soundTransform(st: SoundTransform): SoundTransform {
         this.schtr = st;
         if (this.asink!=null) {
             this.asink.soundTransform = this.schtr;
@@ -142,7 +146,7 @@ class Player extends flash.events.EventDispatcher {
         return this.schtr;
     }
 
-    public function getST(): SoundTransform {
+    public function get_soundTransform(): SoundTransform {
         return this.schtr;
     }
 
